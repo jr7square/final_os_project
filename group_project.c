@@ -36,9 +36,12 @@ must implement a molloc function for left and right buffers to grow because we d
  char left_buffer[8]; // dynamic buffer to hold the baboons from the left
  char right_buffer[8]; // dynamic buffer to hold the baboons from the right
  int direction; // 0 for east, 1 for west
- sem_t mutex; // semephore used for mutual exclusion
- sem_t empty; // semephore used to specify how many empty buffers are available
- sem_t full; // semephore used to specify how many occupied buffers exist
+ // semaphores 
+ sem_t rope_mutex; // semephore used for mutual exclusion on rope buffer 
+ sem_t rope_empty; // semephore used to specify how many rope_empty buffers are available
+ sem_t rope_full; // semephore used to specify how many occupied buffers exist
+ sem_t left_mutex; // semaphore used for mutual exclusion for left buffer 
+ sem_t right_mutex; // semaphore used for mutual exclusion for right buffer 
  FILE* file;
  int* sleepTime;
  struct Queue* left_queue;
@@ -52,9 +55,11 @@ int main(int argc, char *argv[]) {
 	 
 	printf("in main\n");
 	// initialize semephores
-	sem_init(&mutex, 0, 1);  // mutex initialized to 1 to allow access 
-	sem_init(&empty, 0, ROPE_BUFFER_SIZE); // 3 empty buffers
-	sem_init(&full, 0, 0); // 0 full buffers
+	sem_init(&rope_mutex, 0, 1);  // rope_mutex initialized to 1 to allow access 
+	sem_init(&rope_empty, 0, ROPE_BUFFER_SIZE); // 3 rope_empty buffers
+	sem_init(&rope_full, 0, 0); // 0 rope_full buffers
+	sem_init(&left_mutex, 0, 1);
+	sem_init(&right_mutex, 0, 1);
 	
 	// initialize buffers
 	left_queue = createQueue();
@@ -66,8 +71,6 @@ int main(int argc, char *argv[]) {
 	
 	// get the default attributres
 	pthread_attr_init(&producerAttr);
-	
-	
 	
 	
 	/* argc should be 2 for correct execution */
@@ -98,9 +101,11 @@ int main(int argc, char *argv[]) {
 			pthread_join(producer, NULL);
 			
 			// destroy semephores
-			sem_destroy(&mutex);
-			sem_destroy(&empty);
-			sem_destroy(&full);
+			sem_destroy(&rope_mutex);
+			sem_destroy(&rope_empty);
+			sem_destroy(&rope_full);
+			sem_destroy(&left_mutex);
+			sem_destroy(&right_mutex);
 			
 			printf("\ndestroyed\n");
         }
@@ -128,26 +133,30 @@ void* produce(){
 			continue;
 		}
 		else{
-//			sem_wait(&empty);
-//			sem_wait(&mutex);
+//			sem_wait(&rope_empty);
+//			sem_wait(&rope_mutex);
 //			// write to buffer
 //			*(producerBufferPointer + (count % BUFFER_SIZE)) = newChar;		
-//			sem_post(&mutex);
-//			sem_post(&full);
+//			sem_post(&rope_mutex);
+//			sem_post(&rope_full);
 //			count++;
-			if(newChar == 'L'){ // write to left buffer
-				// need to implement molloc to grow buffer if we run out of space. 
+			if(newChar == 'L'){ 
+				// write to left buffer
+				sem_wait(&left_mutex);
 				enQueue(left_queue, 'L');
-				//printf("Babbon from the left\n");
+				sem_post(&left_mutex);
 			}
 			else{
 				// write to right buffer
+				sem_wait(&right_mutex);
 				enQueue(right_queue, 'R');
-				//printf("Baboon from the right\n");
+				sem_post(&right_mutex)
 			}
 		}
 		
 	}
+	/* 
+	code for deQueue and getting char value from node. Example work. 
 	printf("\nThe left queue is:\n");
 	while(1){
 		if(left_queue != NULL){
@@ -182,14 +191,16 @@ void* produce(){
 		
 	}
 	// write an '*' to the buffer to let consumer know producer is done writing
-//	sem_wait(&empty);
-//	sem_wait(&mutex);
+//	sem_wait(&rope_empty);
+//	sem_wait(&rope_mutex);
 //	*(producerBufferPointer + (count % BUFFER_SIZE)) = '*';
-//	sem_post(&mutex);
-//	sem_post(&full);
-//	
-//	close(fp);
-//	// make the thread exit
-//	pthread_exit(NULL);
+//	sem_post(&rope_mutex);
+//	sem_post(&rope_full);
+*/
+//	close the file 
+	close(file);
+	// make the thread exit
+	pthread_exit(NULL);
+
 }
 
