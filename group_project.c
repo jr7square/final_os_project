@@ -160,6 +160,16 @@ void* produce(){
 		}
 		
 	}
+	// after end of file we write '*' to both buffers so other threads know input has stopped
+	sem_wait(&left_mutex);
+	enQueue(left_queue, '*');
+	sem_post(&left_mutex);
+	
+	sem_wait(&right_mutex);
+	enQueue(right_queue, '*');
+	sem_post(&right_mutex);
+	
+	
 	/* 
 	code for deQueue and getting char value from node. Example work. 
 	printf("\nThe left queue is:\n");
