@@ -1,11 +1,13 @@
 // A C program to demonstrate linked list based implementation of queue
 #include <stdlib.h>
 #include <stdio.h>
+#include "linked_queue.h"
 
+/*
 // A linked list (LL) node to store a queue entry
 struct QNode
 {
-	int key;
+	char key;
 	struct QNode *next;
 };
 
@@ -15,9 +17,9 @@ struct Queue
 {
 	struct QNode *front, *rear;
 };
-
+*/
 // A utility function to create a new linked list node.
-struct QNode* newNode(int k)
+struct QNode* newNode(char k)
 {
 	struct QNode *temp = (struct QNode*)malloc(sizeof(struct QNode));
 	temp->key = k;
@@ -34,7 +36,7 @@ struct Queue *createQueue()
 }
 
 // The function to add a key k to q
-void enQueue(struct Queue *q, int k)
+void enQueue(struct Queue *q, char k)
 {
 	// Create a new LL node
 	struct QNode *temp = newNode(k);

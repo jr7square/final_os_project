@@ -23,6 +23,7 @@ must implement a molloc function for left and right buffers to grow because we d
 #include <semaphore.h>
 #include <unistd.h>
 
+
 // files included
 #include "linked_queue.h"
 
@@ -40,17 +41,24 @@ must implement a molloc function for left and right buffers to grow because we d
  sem_t full; // semephore used to specify how many occupied buffers exist
  FILE* file;
  int* sleepTime;
+ struct Queue* left_queue;
+ struct Queue* right_queue;
  
  // function prototypes
 void* produce();
 
 
 int main(int argc, char *argv[]) {
+	 
 	printf("in main\n");
 	// initialize semephores
 	sem_init(&mutex, 0, 1);  // mutex initialized to 1 to allow access 
 	sem_init(&empty, 0, ROPE_BUFFER_SIZE); // 3 empty buffers
 	sem_init(&full, 0, 0); // 0 full buffers
+	
+	// initialize buffers
+	left_queue = createQueue();
+	right_queue = createQueue();
 	
 	// producer thread identifier and attributes
 	pthread_t producer;
@@ -129,12 +137,47 @@ void* produce(){
 //			count++;
 			if(newChar == 'L'){ // write to left buffer
 				// need to implement molloc to grow buffer if we run out of space. 
-				printf("Babbon from the left\n");
+				enQueue(left_queue, 'L');
+				//printf("Babbon from the left\n");
 			}
 			else{
 				// write to right buffer
-				printf("Baboon from the right\n");
+				enQueue(right_queue, 'R');
+				//printf("Baboon from the right\n");
 			}
+		}
+		
+	}
+	printf("\nThe left queue is:\n");
+	while(1){
+		if(left_queue != NULL){
+			struct QNode *lnode = deQueue(left_queue);
+			if(lnode != NULL){
+				printf("%c ", lnode->key);
+			}
+			else{
+				break;
+			}
+		}
+		else{
+			break;
+		}
+		
+
+	}
+	printf("\nThe right queue is:\n");
+	while(1){
+		if(right_queue != NULL){
+			struct QNode* rnode = deQueue(right_queue);
+			if(rnode != NULL){
+				printf("%c ", rnode->key);
+			}
+			else{
+				break;
+			}
+		}
+		else{
+			break;
 		}
 		
 	}
