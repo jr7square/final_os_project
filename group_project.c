@@ -36,9 +36,12 @@ must implement a molloc function for left and right buffers to grow because we d
  char left_buffer[8]; // dynamic buffer to hold the baboons from the left
  char right_buffer[8]; // dynamic buffer to hold the baboons from the right
  int direction; // 0 for east, 1 for west
- // sem_t mutex; // semephore used for mutual exclusion
- // sem_t empty; // semephore used to specify how many empty buffers are available
- // sem_t full; // semephore used to specify how many occupied buffers exist
+ // semaphores
+ // sem_t rope_mutex; // semephore used for mutual exclusion on rope buffer
+ // sem_t rope_empty; // semephore used to specify how many rope_empty buffers are available
+ // sem_t rope_full; // semephore used to specify how many occupied buffers exist
+ // sem_t left_mutex; // semaphore used for mutual exclusion for left buffer
+ // sem_t right_mutex; // semaphore used for mutual exclusion for right buffer
  FILE* file;
  int* sleepTime;
  struct Queue* left_queue;
@@ -46,7 +49,8 @@ must implement a molloc function for left and right buffers to grow because we d
 
 sem_t direction_mutex;
 sem_t rope_space;
-
+sem_t left_mutex; // semaphore used for mutual exclusion for left buffer
+sem_t right_mutex; // semaphore used for mutual exclusion for right buffer
  // function prototypes
 void makeBaboonCross(char dir);
 void *baboonCrossing(void *dir_ptr);
@@ -61,9 +65,10 @@ int main(int argc, char *argv[]) {
 
 	printf("in main\n");
 	// initialize semephores
-	sem_init(&direction_mutex, 0, 1);  // mutex initialized to 1 to allow access
+    sem_init(&direction_mutex, 0, 1);  // mutex initialized to 1 to allow access
 	sem_init(&rope_space, 0, ROPE_BUFFER_SIZE); // 3 empty buffers
-	// sem_init(&full, 0, 0); // 0 full buffers
+	sem_init(&left_mutex, 0, 1);
+	sem_init(&right_mutex, 0, 1);
 
 	// initialize buffers
 	left_queue = createQueue();
@@ -77,6 +82,7 @@ int main(int argc, char *argv[]) {
 
 	// get the default attributres
 	pthread_attr_init(&producerAttr);
+
 
 	/* argc should be 2 for correct execution */
 	if ( argc != 3 )
@@ -112,6 +118,8 @@ int main(int argc, char *argv[]) {
 			// destroy semaphores
 			sem_destroy(&direction_mutex);
 			sem_destroy(&rope_space);
+            sem_destroy(&left_mutex);
+            sem_destroy(&right_mutex);
 			// sem_destroy(&full);
 
 			printf("\ndestroyed\n");
@@ -148,7 +156,9 @@ void *leftQueueFunction() {
         if (left_queue->front == NULL) continue;
         wait(&direction_mutex);
         while(left_queue->front != NULL && count < 5) {
+            sem_wait(left_mutex);
             c = deQueue(left_queue);
+            sem_wait(right_mutex);
             makeBaboonCross(c);
             if (right_queue != NULL) {
                 count += 1;
@@ -169,7 +179,9 @@ void *rightQueueFunction() {
         if (right_queue->front == NULL) continue;
         wait(&direction_mutex);
         while(right_queue->front != NULL && count < 5) {
+            sem_wait(right_mutex);
             c = deQueue(right_queue);
+            sem_signal(right_mutex);
             makeBaboonCross(c);
             if (left_queue != NULL) {
                 count += 1;
@@ -203,24 +215,45 @@ void* produce(){
 			continue;
 		}
 		else{
-//			sem_wait(&empty);
-//			sem_wait(&mutex);
+//			sem_wait(&rope_empty);
+//			sem_wait(&rope_mutex);
 //			// write to buffer
 //			*(producerBufferPointer + (count % BUFFER_SIZE)) = newChar;
-//			sem_post(&mutex);
-//			sem_post(&full);
+//			sem_post(&rope_mutex);
+//			sem_post(&rope_full);
 //			count++;
-			if(newChar == 'L'){ // write to left buffer
-				// need to implement molloc to grow buffer if we run out of space.
+			if(newChar == 'L'){
+				// write to left buffer
+				sem_wait(&left_mutex);
 				enQueue(left_queue, 'L');
-				//printf("Babbon from the left\n");
+				sem_post(&left_mutex);
 			}
 			else{
 				// write to right buffer
+				sem_wait(&right_mutex);
 				enQueue(right_queue, 'R');
-				//printf("Baboon from the right\n");
+				sem_post(&right_mutex)
 			}
 		}
+
+	}
+	/*
+	code for deQueue and getting char value from node. Example work.
+	printf("\nThe left queue is:\n");
+	while(1){
+		if(left_queue != NULL){
+			struct QNode *lnode = deQueue(left_queue);
+			if(lnode != NULL){
+				printf("%c ", lnode->key);
+			}
+			else{
+				break;
+			}
+		}
+		else{
+			break;
+		}
+
 
 	}
 	// printf("\nThe left queue is:\n");
@@ -257,15 +290,17 @@ void* produce(){
     //
 	// }
 	// write an '*' to the buffer to let consumer know producer is done writing
-//	sem_wait(&empty);
-//	sem_wait(&mutex);
+//	sem_wait(&rope_empty);
+//	sem_wait(&rope_mutex);
 //	*(producerBufferPointer + (count % BUFFER_SIZE)) = '*';
-//	sem_post(&mutex);
-//	sem_post(&full);
-//
-//	close(fp);
-//	// make the thread exit
-//	pthread_exit(NULL);
+//	sem_post(&rope_mutex);
+//	sem_post(&rope_full);
+*/
+//	close the file
+	close(file);
+	// make the thread exit
+	pthread_exit(NULL);
+
 }
 
 
