@@ -196,7 +196,7 @@ void *rightQueueFunction() {
         sem_wait(&direction_mutex);
         //printf("Grabbed mutext right");
         //fflush(stdout);
-        while(right_queue->front != NULL && left_queue->front->key != '*' && count < 5) {
+        while(right_queue->front != NULL && right_queue->front->key != '*' && count < 5) {
             sem_wait(&right_mutex);
             c = deQueue(right_queue)->key;
             sem_post(&right_mutex);
