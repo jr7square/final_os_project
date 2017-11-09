@@ -31,6 +31,7 @@ must implement a molloc function for left and right buffers to grow because we d
 // number of buffers on the rope
 #define ROPE_BUFFER_SIZE 3
 
+int baboons_crossing = 0;
  // global variables which all threads will have access to
  char rope_buffer[ROPE_BUFFER_SIZE]; // 3 character array to simulate monkeys on the rope
  char left_buffer[8]; // dynamic buffer to hold the baboons from the left
@@ -107,8 +108,10 @@ int main(int argc, char *argv[]) {
 
         	// create the threads
 			pthread_create(&producer, &producerAttr, produce, NULL);
-            pthread_create(&left_queue_thread, &producerAttr, produce, NULL);
-            pthread_create(&right_queue_thread, &producerAttr, produce, NULL);
+            sleep(2);
+            
+            pthread_create(&left_queue_thread, &producerAttr, leftQueueFunction, NULL);
+            pthread_create(&right_queue_thread, &producerAttr, rightQueueFunction, NULL);
 
 			// wait for the threads to finish
 			pthread_join(producer, NULL);
@@ -152,18 +155,24 @@ void *baboonCrossing(void *dir_ptr) {
 void *leftQueueFunction() {
     char c;
     int count = 0;
-    while(left_queue->front != NULL || right_queue->front != NULL) {
-        if (left_queue->front == NULL) continue;
-        wait(&direction_mutex);
+    //printf("Left Queue Function arrived");
+    //fflush(stdout);
+    while(left_queue->front != NULL) {
+        //printf("Starting out left");
+        //fflush(stdout);
+        sem_wait(&direction_mutex);
+        //printf("Grabbed mutext left");
+        //fflush(stdout);
         while(left_queue->front != NULL && count < 5) {
-            sem_wait(left_mutex);
-            c = deQueue(left_queue);
-            sem_wait(right_mutex);
+            sem_wait(&left_mutex);
+            c = deQueue(left_queue)->key;
+            sem_post(&left_mutex);
             makeBaboonCross(c);
-            if (right_queue != NULL) {
+            if (right_queue->front != NULL) {
                 count += 1;
             }
         }
+        //printf("woah");
         count = 0;
         while(baboons_crossing);
         sem_post(&direction_mutex);
@@ -175,15 +184,20 @@ void *leftQueueFunction() {
 void *rightQueueFunction() {
     char c;
     int count = 0;
-    while(left_queue->front != NULL || right_queue->front != NULL) {
-        if (right_queue->front == NULL) continue;
-        wait(&direction_mutex);
+    //printf("Right Queue Function arrived");
+    //fflush(stdout);
+    while(right_queue->front != NULL) {
+        //printf("Starting out right");
+        //fflush(stdout);
+        sem_wait(&direction_mutex);
+        //printf("Grabbed mutext right");
+        //fflush(stdout);
         while(right_queue->front != NULL && count < 5) {
-            sem_wait(right_mutex);
-            c = deQueue(right_queue);
-            sem_signal(right_mutex);
+            sem_wait(&right_mutex);
+            c = deQueue(right_queue)->key;
+            sem_post(&right_mutex);
             makeBaboonCross(c);
-            if (left_queue != NULL) {
+            if (left_queue->front != NULL) {
                 count += 1;
             }
         }
@@ -232,7 +246,7 @@ void* produce(){
 				// write to right buffer
 				sem_wait(&right_mutex);
 				enQueue(right_queue, 'R');
-				sem_post(&right_mutex)
+				sem_post(&right_mutex);
 			}
 		}
 
