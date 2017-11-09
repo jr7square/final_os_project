@@ -15,6 +15,7 @@ must implement a molloc function for left and right buffers to grow because we d
 #define _REENTRANT
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -106,6 +107,10 @@ int main(int argc, char *argv[]) {
 			sem_destroy(&rope_full);
 			sem_destroy(&left_mutex);
 			sem_destroy(&right_mutex);
+			
+			//free memory used by malloc 
+			free(left_buffer);
+			free(right_buffer);
 			
 			printf("\ndestroyed\n");
         }
