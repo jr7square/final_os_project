@@ -15,6 +15,7 @@ must implement a molloc function for left and right buffers to grow because we d
 #define _REENTRANT
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -123,6 +124,9 @@ int main(int argc, char *argv[]) {
 			sem_destroy(&rope_space);
             sem_destroy(&left_mutex);
             sem_destroy(&right_mutex);
+            //free memory used by malloc
+            free(left_buffer);
+            free(right_buffer);
 			// sem_destroy(&full);
 
 			printf("\ndestroyed\n");
@@ -163,7 +167,7 @@ void *leftQueueFunction() {
         sem_wait(&direction_mutex);
         //printf("Grabbed mutext left");
         //fflush(stdout);
-        while(left_queue->front != NULL && count < 5) {
+        while(left_queue->front != NULL && left_queue->front->key != '*' && count < 5) {
             sem_wait(&left_mutex);
             c = deQueue(left_queue)->key;
             sem_post(&left_mutex);
@@ -192,7 +196,7 @@ void *rightQueueFunction() {
         sem_wait(&direction_mutex);
         //printf("Grabbed mutext right");
         //fflush(stdout);
-        while(right_queue->front != NULL && count < 5) {
+        while(right_queue->front != NULL && left_queue->front->key != '*' && count < 5) {
             sem_wait(&right_mutex);
             c = deQueue(right_queue)->key;
             sem_post(&right_mutex);
@@ -251,6 +255,16 @@ void* produce(){
 		}
 
 	}
+	// after end of file we write '*' to both buffers so other threads know input has stopped
+	sem_wait(&left_mutex);
+	enQueue(left_queue, '*');
+	sem_post(&left_mutex);
+
+	sem_wait(&right_mutex);
+	enQueue(right_queue, '*');
+	sem_post(&right_mutex);
+
+
 	/*
 	code for deQueue and getting char value from node. Example work.
 	printf("\nThe left queue is:\n");
