@@ -246,7 +246,7 @@ void* produce(){
 				enQueue(left_queue, 'L');
 				sem_post(&left_mutex);
 			}
-			else{
+			else if(newChar == 'R'){
 				// write to right buffer
 				sem_wait(&right_mutex);
 				enQueue(right_queue, 'R');
