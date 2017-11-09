@@ -155,7 +155,7 @@ void* produce(){
 				// write to right buffer
 				sem_wait(&right_mutex);
 				enQueue(right_queue, 'R');
-				sem_post(&right_mutex)
+				sem_post(&right_mutex);
 			}
 		}
 		
