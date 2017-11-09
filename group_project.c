@@ -125,8 +125,8 @@ int main(int argc, char *argv[]) {
             sem_destroy(&left_mutex);
             sem_destroy(&right_mutex);
             //free memory used by malloc
-            free(left_buffer);
-            free(right_buffer);
+            //free(left_buffer);
+            //free(right_buffer);
 			// sem_destroy(&full);
 
 			printf("\ndestroyed\n");
@@ -172,7 +172,7 @@ void *leftQueueFunction() {
             c = deQueue(left_queue)->key;
             sem_post(&left_mutex);
             makeBaboonCross(c);
-            if (right_queue->front != NULL) {
+            if (right_queue->front->key != '*') {
                 count += 1;
             }
         }
@@ -201,7 +201,7 @@ void *rightQueueFunction() {
             c = deQueue(right_queue)->key;
             sem_post(&right_mutex);
             makeBaboonCross(c);
-            if (left_queue->front != NULL) {
+            if (left_queue->front->key != '*') {
                 count += 1;
             }
         }
