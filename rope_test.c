@@ -40,6 +40,8 @@ int main() {
     pthread_join(leftQueueThread, NULL);
     pthread_join(rightQueueThread, NULL);
 
+    sem_destroy(&mutex);
+    sem_destroy(&rope_space);
     printf("Finished");
     return 0;
 }
@@ -71,6 +73,9 @@ void *leftQueueFunction(void *ptr) {
     int count = 0;
     char c;
     while(1) {
+        if (index == 8) break;
+        // printf("Left queue ayy");
+        // fflush(stdout);
         sem_wait(&mutex);
         while (count < 5 && index < 8) {
             c = left_buffer[index];
@@ -81,6 +86,7 @@ void *leftQueueFunction(void *ptr) {
         count = 0;
         while(baboons_crossing != 0);
         sem_post(&mutex);
+        sleep(1);
     }
     pthread_exit(NULL);
 }
@@ -90,6 +96,9 @@ void *rightQueueFunction(void *ptr) {
     int count = 0;
     char c;
     while(1) {
+        if (index == 8) break;
+        // printf("Rightqueueayy");
+        //fflush(stdout);
         sem_wait(&mutex);
         while(count < 5 && index < 8) {
             c = right_buffer[index];
@@ -100,6 +109,7 @@ void *rightQueueFunction(void *ptr) {
         count = 0;
         while(baboons_crossing != 0);
         sem_post(&mutex);
+        sleep(1);
     }
     pthread_exit(NULL);
 }
