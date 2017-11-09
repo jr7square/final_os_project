@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
         	// create the threads
 			pthread_create(&producer, &producerAttr, produce, NULL);
             sleep(2);
-            
+
             pthread_create(&left_queue_thread, &producerAttr, leftQueueFunction, NULL);
             pthread_create(&right_queue_thread, &producerAttr, rightQueueFunction, NULL);
 
@@ -157,7 +157,7 @@ void *leftQueueFunction() {
     int count = 0;
     //printf("Left Queue Function arrived");
     //fflush(stdout);
-    while(left_queue->front != NULL) {
+    while(left_queue->front->key != '*') {
         //printf("Starting out left");
         //fflush(stdout);
         sem_wait(&direction_mutex);
@@ -186,7 +186,7 @@ void *rightQueueFunction() {
     int count = 0;
     //printf("Right Queue Function arrived");
     //fflush(stdout);
-    while(right_queue->front != NULL) {
+    while(right_queue->front->key != '*') {
         //printf("Starting out right");
         //fflush(stdout);
         sem_wait(&direction_mutex);
