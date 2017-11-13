@@ -31,10 +31,13 @@ must implement a molloc function for left and right buffers to grow because we d
 
 // number of buffers on the rope
 #define ROPE_BUFFER_SIZE 3
+<<<<<<< HEAD
 // number of turns each side is allowed at a time
 #define NUM_OF_TURNS 6
+=======
+#define MAX_BABOONS_PER_QUEUE 6
+>>>>>>> thread-test
 
-int baboons_crossing = 0;
  // global variables which all threads will have access to
  char rope_buffer[ROPE_BUFFER_SIZE]; // 3 character array to simulate monkeys on the rope
  char left_buffer[8]; // dynamic buffer to hold the baboons from the left
@@ -52,9 +55,10 @@ int baboons_crossing = 0;
  struct Queue* right_queue;
 
 sem_t direction_mutex;
-sem_t rope_space;
+sem_t rope_available;
 sem_t left_mutex; // semaphore used for mutual exclusion for left buffer
 sem_t right_mutex; // semaphore used for mutual exclusion for right buffer
+pthread_t baboonThreads[MAX_BABOONS_PER_QUEUE];
  // function prototypes
 void makeBaboonCross(char dir);
 void *baboonCrossing(void *dir_ptr);
@@ -70,7 +74,7 @@ int main(int argc, char *argv[]) {
 	printf("in main\n");
 	// initialize semephores
     sem_init(&direction_mutex, 0, 1);  // mutex initialized to 1 to allow access
-	sem_init(&rope_space, 0, ROPE_BUFFER_SIZE); // 3 empty buffers
+	sem_init(&rope_available, 0, ROPE_BUFFER_SIZE); // 3 empty buffers
 	sem_init(&left_mutex, 0, 1);
 	sem_init(&right_mutex, 0, 1);
 
@@ -123,12 +127,17 @@ int main(int argc, char *argv[]) {
 
 			// destroy semaphores
 			sem_destroy(&direction_mutex);
-			sem_destroy(&rope_space);
+			sem_destroy(&rope_available);
             sem_destroy(&left_mutex);
             sem_destroy(&right_mutex);
             //free memory used by malloc
+<<<<<<< HEAD
             //free(left_buffer);
             //free(right_buffer);
+=======
+            // free(left_buffer);
+            // free(right_buffer);
+>>>>>>> thread-test
 			// sem_destroy(&full);
 
 			//printf("\ndestroyed\n");
@@ -137,50 +146,61 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-void makeBaboonCross(char dir) {
-    sem_wait(&rope_space);
-    baboons_crossing += 1;
-    pthread_t baboon;
-    pthread_attr_t attr;
 
-    pthread_attr_init(&attr);
-    pthread_create(&baboon, &attr, baboonCrossing, (void *)&dir);
-    pthread_detach(baboon);
-}
 
 void *baboonCrossing(void *dir_ptr) {
     char dir = *((char *)dir_ptr);
     sleep(2);
     printf("%c", dir);
     fflush(stdout);
-    sem_post(&rope_space);
-    baboons_crossing -= 1;
+    sem_post(&rope_available);
     pthread_exit(NULL);
 }
 
 void *leftQueueFunction() {
     char c;
-    int count = 0;
-    //printf("Left Queue Function arrived");
-    //fflush(stdout);
-    while(left_queue->front->key != '*') {
-        //printf("Starting out left");
-        //fflush(stdout);
+    int count = 0, total_threads = 0;
+    pthread_attr_t attr;
+
+    pthread_attr_init(&attr);
+    while(1) {
+        sem_wait(&left_mutex);
+        char front_key = NULL;
+        if (left_queue->front && left_queue->front->key) {
+            front_key = left_queue->front->key;
+        }
+        sem_post(&left_mutex);
+        if (front_key == '*') break;
+
         sem_wait(&direction_mutex);
+<<<<<<< HEAD
         //printf("Grabbed mutext left");
         //fflush(stdout);
         while(left_queue->front != NULL && left_queue->front->key != '*' && count < NUM_OF_TURNS) {
+=======
+        for (count = 0; count < MAX_BABOONS_PER_QUEUE; count++) {
+>>>>>>> thread-test
             sem_wait(&left_mutex);
+            if (left_queue->front == NULL || left_queue->front->key == '*') {
+                sem_post(&left_mutex);
+                break;
+            }
             c = deQueue(left_queue)->key;
             sem_post(&left_mutex);
+<<<<<<< HEAD
             makeBaboonCross(c);
             if (right_queue->front->key != '*') {
                 count += 1;
             }
+=======
+
+            sem_wait(&rope_available);
+            pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
-        //printf("woah");
-        count = 0;
-        while(baboons_crossing);
+        for (total_threads = 0; total_threads < count; total_threads++) {
+            pthread_join(baboonThreads[total_threads], NULL);
+>>>>>>> thread-test
+        }
         sem_post(&direction_mutex);
         sleep(1);
     }
@@ -190,25 +210,48 @@ void *leftQueueFunction() {
 void *rightQueueFunction() {
     char c;
     int count = 0;
-    //printf("Right Queue Function arrived");
-    //fflush(stdout);
-    while(right_queue->front->key != '*') {
-        //printf("Starting out right");
-        //fflush(stdout);
+    int total_threads = 0;
+    pthread_attr_t attr;
+
+    pthread_attr_init(&attr);
+    while(1) {
+        sem_wait(&right_mutex);
+        char front_key = NULL;
+        if (right_queue->front && right_queue->front->key) {
+            front_key = right_queue->front->key;
+        }
+        sem_post(&right_mutex);
+        if (front_key && front_key == '*') break;
+
         sem_wait(&direction_mutex);
+<<<<<<< HEAD
         //printf("Grabbed mutext right");
         //fflush(stdout);
         while(right_queue->front != NULL && right_queue->front->key != '*' && count < NUM_OF_TURNS) {
+=======
+        for (count = 0; count < MAX_BABOONS_PER_QUEUE; count++) {
+>>>>>>> thread-test
             sem_wait(&right_mutex);
+            if (right_queue->front == NULL || right_queue->front->key == '*') {
+                sem_post(&right_mutex);
+                break;
+            }
             c = deQueue(right_queue)->key;
             sem_post(&right_mutex);
+<<<<<<< HEAD
             makeBaboonCross(c);
             if (left_queue->front->key != '*') {
                 count += 1;
             }
+=======
+
+            sem_wait(&rope_available);
+            pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
-        count = 0;
-        while(baboons_crossing);
+        for (total_threads = 0; total_threads < count; total_threads++) {
+            pthread_join(baboonThreads[total_threads], NULL);
+>>>>>>> thread-test
+        }
         sem_post(&direction_mutex);
         sleep(1);
     }
