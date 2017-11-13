@@ -33,7 +33,6 @@ must implement a molloc function for left and right buffers to grow because we d
 #define ROPE_BUFFER_SIZE 3
 #define MAX_BABOONS_PER_QUEUE 6
 
-int baboons_crossing = 0;
  // global variables which all threads will have access to
  char rope_buffer[ROPE_BUFFER_SIZE]; // 3 character array to simulate monkeys on the rope
  char left_buffer[8]; // dynamic buffer to hold the baboons from the left
@@ -145,7 +144,6 @@ void *baboonCrossing(void *dir_ptr) {
     printf("%c", dir);
     fflush(stdout);
     sem_post(&rope_available);
-    baboons_crossing -= 1;
     pthread_exit(NULL);
 }
 
@@ -155,15 +153,25 @@ void *leftQueueFunction() {
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
-    while(left_queue->front->key != '*') {
-        sem_wait(&direction_mutex);
-        for (count = 0; count < MAX_BABOONS_PER_QUEUE &&
-            left_queue->front != NULL &&
-            left_queue->front->key != '*'; count++) {
+    while(1) {
+        sem_wait(&left_mutex);
+        char front_key = NULL;
+        if (left_queue->front && left_queue->front_key) {
+            front_key = left_queue->front->key;
+        }
+        sem_post(&left_mutex);
+        if (front_key == '*') break;
 
+        sem_wait(&direction_mutex);
+        for (count = 0; count < MAX_BABOONS_PER_QUEUE; count++) {
             sem_wait(&left_mutex);
+            if (left_queue->front == NULL || left_queue->front->key == '*') {
+                sem_post(&left_mutex);
+                break;
+            }
             c = deQueue(left_queue)->key;
             sem_post(&left_mutex);
+
             sem_wait(&rope_available);
             pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&dir);
         }
@@ -181,15 +189,25 @@ void *rightQueueFunction() {
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
-    while(right_queue->front->key != '*') {
-        sem_wait(&direction_mutex);
-        for (count = 0; count < MAX_BABOONS_PER_QUEUE &&
-            right_queue->front != NULL &&
-            right_queue->front->key != '*'; count++) {
+    while(1) {
+        sem_wait(&right_mutex);
+        char front_key = NULL;
+        if (right_queue->front && right_queue->front_key) {
+            front_key = right_queue->front->key;
+        }
+        sem_post(&right_mutex);
+        if (front_key && front_key == '*') break;
 
+        sem_wait(&direction_mutex);
+        for (count = 0; count < MAX_BABOONS_PER_QUEUE; count++) {
             sem_wait(&right_mutex);
+            if (right_queue->front == NULL || right_queue->front->key == '*') {
+                sem_post(&right_mutex);
+                break;
+            }
             c = deQueue(right_queue)->key;
             sem_post(&right_mutex);
+
             sem_wait(&rope_available);
             pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&dir);
         }
