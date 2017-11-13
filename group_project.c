@@ -173,12 +173,13 @@ void *leftQueueFunction() {
             sem_post(&left_mutex);
 
             sem_wait(&rope_available);
-            pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&dir);
+            pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
         for (total_threads = 0; total_threads < count; total_threads++) {
             pthread_join(baboonThreads[total_threads], NULL);
         }
         sem_post(&direction_mutex);
+        sleep(1);
     }
     pthread_exit(NULL);
 }
@@ -186,6 +187,7 @@ void *leftQueueFunction() {
 void *rightQueueFunction() {
     char c;
     int count = 0;
+    int total_threads = 0;
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
@@ -209,12 +211,13 @@ void *rightQueueFunction() {
             sem_post(&right_mutex);
 
             sem_wait(&rope_available);
-            pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&dir);
+            pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
         for (total_threads = 0; total_threads < count; total_threads++) {
             pthread_join(baboonThreads[total_threads], NULL);
         }
         sem_post(&direction_mutex);
+        sleep(1);
     }
     pthread_exit(NULL);
 }
