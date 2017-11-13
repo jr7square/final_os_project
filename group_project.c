@@ -31,6 +31,8 @@ must implement a molloc function for left and right buffers to grow because we d
 
 // number of buffers on the rope
 #define ROPE_BUFFER_SIZE 3
+// number of turns each side is allowed at a time
+#define NUM_OF_TURNS 6
 
 int baboons_crossing = 0;
  // global variables which all threads will have access to
@@ -105,7 +107,7 @@ int main(int argc, char *argv[]) {
         else
         {
         	sleepTime = atoi(argv[2]);
-			printf("Sleep time is: %d\n", sleepTime);
+			//printf("Sleep time is: %d\n", sleepTime);
 
         	// create the threads
 			pthread_create(&producer, &producerAttr, produce, NULL);
@@ -129,7 +131,7 @@ int main(int argc, char *argv[]) {
             //free(right_buffer);
 			// sem_destroy(&full);
 
-			printf("\ndestroyed\n");
+			//printf("\ndestroyed\n");
         }
     }
 	return 0;
@@ -167,7 +169,7 @@ void *leftQueueFunction() {
         sem_wait(&direction_mutex);
         //printf("Grabbed mutext left");
         //fflush(stdout);
-        while(left_queue->front != NULL && left_queue->front->key != '*' && count < 5) {
+        while(left_queue->front != NULL && left_queue->front->key != '*' && count < NUM_OF_TURNS) {
             sem_wait(&left_mutex);
             c = deQueue(left_queue)->key;
             sem_post(&left_mutex);
@@ -196,7 +198,7 @@ void *rightQueueFunction() {
         sem_wait(&direction_mutex);
         //printf("Grabbed mutext right");
         //fflush(stdout);
-        while(right_queue->front != NULL && right_queue->front->key != '*' && count < 5) {
+        while(right_queue->front != NULL && right_queue->front->key != '*' && count < NUM_OF_TURNS) {
             sem_wait(&right_mutex);
             c = deQueue(right_queue)->key;
             sem_post(&right_mutex);
@@ -233,13 +235,6 @@ void* produce(){
 			continue;
 		}
 		else{
-//			sem_wait(&rope_empty);
-//			sem_wait(&rope_mutex);
-//			// write to buffer
-//			*(producerBufferPointer + (count % BUFFER_SIZE)) = newChar;
-//			sem_post(&rope_mutex);
-//			sem_post(&rope_full);
-//			count++;
 			if(newChar == 'L'){
 				// write to left buffer
 				sem_wait(&left_mutex);
@@ -264,67 +259,6 @@ void* produce(){
 	enQueue(right_queue, '*');
 	sem_post(&right_mutex);
 
-
-	/*
-	code for deQueue and getting char value from node. Example work.
-	printf("\nThe left queue is:\n");
-	while(1){
-		if(left_queue != NULL){
-			struct QNode *lnode = deQueue(left_queue);
-			if(lnode != NULL){
-				printf("%c ", lnode->key);
-			}
-			else{
-				break;
-			}
-		}
-		else{
-			break;
-		}
-
-
-	}
-	// printf("\nThe left queue is:\n");
-	// while(1){
-	// 	if(left_queue != NULL){
-	// 		struct QNode *lnode = deQueue(left_queue);
-	// 		if(lnode != NULL){
-	// 			printf("%c ", lnode->key);
-	// 		}
-	// 		else{
-	// 			break;
-	// 		}
-	// 	}
-	// 	else{
-	// 		break;
-	// 	}
-    //
-    //
-	// }
-	// // printf("\nThe right queue is:\n");
-	// while(1){
-	// 	if(right_queue != NULL){
-	// 		struct QNode* rnode = deQueue(right_queue);
-	// 		if(rnode != NULL){
-	// 			// printf("%c ", rnode->key);
-	// 		}
-	// 		else{
-	// 			break;
-	// 		}
-	// 	}
-	// 	else{
-	// 		break;
-	// 	}
-    //
-	// }
-	// write an '*' to the buffer to let consumer know producer is done writing
-//	sem_wait(&rope_empty);
-//	sem_wait(&rope_mutex);
-//	*(producerBufferPointer + (count % BUFFER_SIZE)) = '*';
-//	sem_post(&rope_mutex);
-//	sem_post(&rope_full);
-*/
-//	close the file
 	close(file);
 	// make the thread exit
 	pthread_exit(NULL);
