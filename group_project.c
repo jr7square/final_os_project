@@ -156,7 +156,7 @@ void *leftQueueFunction() {
     while(1) {
         sem_wait(&left_mutex);
         char front_key = NULL;
-        if (left_queue->front && left_queue->front_key) {
+        if (left_queue->front && left_queue->front->key) {
             front_key = left_queue->front->key;
         }
         sem_post(&left_mutex);
@@ -194,7 +194,7 @@ void *rightQueueFunction() {
     while(1) {
         sem_wait(&right_mutex);
         char front_key = NULL;
-        if (right_queue->front && right_queue->front_key) {
+        if (right_queue->front && right_queue->front->key) {
             front_key = right_queue->front->key;
         }
         sem_post(&right_mutex);
