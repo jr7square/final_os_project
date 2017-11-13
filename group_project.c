@@ -1,15 +1,7 @@
 /*
-TODO
-must implement a molloc function for left and right buffers to grow because we do not know how long the text file is
--- must create a queue to reserve the FIFO ordering in the buffers.
- -- must create a consumer that dequeue's baboons from the queue's.
- -- producer reads the text file and populates the left and right buffers
- -- every character becomes a thread trying to get on the rope from the two buffers
-
-  to compile
-  gcc name_of_program.c -lpthread -lrt
+	Authors: Anthony Brancucci, Junior Recinos, Benjamin Culpepper, Juan Carrillo
+	OS Group Project -- Synchronization 
 */
-
 
 // header files required
 #define _REENTRANT
@@ -24,7 +16,6 @@ must implement a molloc function for left and right buffers to grow because we d
 #include <semaphore.h>
 #include <unistd.h>
 
-
 // files included
 #include "linked_queue.h"
 
@@ -35,26 +26,20 @@ must implement a molloc function for left and right buffers to grow because we d
 #define MAX_BABOONS_PER_QUEUE 6
 
  // global variables which all threads will have access to
- char rope_buffer[ROPE_BUFFER_SIZE]; // 3 character array to simulate monkeys on the rope
- char left_buffer[8]; // dynamic buffer to hold the baboons from the left
- char right_buffer[8]; // dynamic buffer to hold the baboons from the right
- int direction; // 0 for east, 1 for west
- // semaphores
- // sem_t rope_mutex; // semephore used for mutual exclusion on rope buffer
- // sem_t rope_empty; // semephore used to specify how many rope_empty buffers are available
- // sem_t rope_full; // semephore used to specify how many occupied buffers exist
- // sem_t left_mutex; // semaphore used for mutual exclusion for left buffer
- // sem_t right_mutex; // semaphore used for mutual exclusion for right buffer
- FILE* file;
- int* sleepTime;
- struct Queue* left_queue;
- struct Queue* right_queue;
+ FILE* file; // variable to store the file contents 
+ int* sleepTime; // variable to hold the amount of time a monkey takes to cross the rope 
+ struct Queue* left_queue; // queue to hold character nodes simulating monkeys going in a given direction 
+ struct Queue* right_queue; // queue to hold character nodes simulating monkeys going in a given direction 
 
-sem_t direction_mutex;
-sem_t rope_available;
+// semaphores
+sem_t direction_mutex; // controls the direction currently crossing the rope 
+sem_t rope_available; // semaphore used to control if there are any buffers available on the rope 
 sem_t left_mutex; // semaphore used for mutual exclusion for left buffer
 sem_t right_mutex; // semaphore used for mutual exclusion for right buffer
+
+// thread array used to keep track of moneys crossing the rope 
 pthread_t baboonThreads[MAX_BABOONS_PER_QUEUE];
+
  // function prototypes
 void makeBaboonCross(char dir);
 void *baboonCrossing(void *dir_ptr);
@@ -63,19 +48,17 @@ void *rightQueueFunction();
 void *produce();
 
 int main(int argc, char *argv[]) {
-
-	printf("in main\n");
-	// initialize semephores
+	// initialize semaphores
     sem_init(&direction_mutex, 0, 1);  // mutex initialized to 1 to allow access
 	sem_init(&rope_available, 0, ROPE_BUFFER_SIZE); // 3 empty buffers
-	sem_init(&left_mutex, 0, 1);
-	sem_init(&right_mutex, 0, 1);
+	sem_init(&left_mutex, 0, 1); // mutex for left buffer 
+	sem_init(&right_mutex, 0, 1); // mutex for right buffer 
 
-	// initialize buffers
+	// initialize buffer queue's 
 	left_queue = createQueue();
 	right_queue = createQueue();
 
-	// producer thread identifier and attributes
+	// declare thread identifier and attributes
 	pthread_t producer;
     pthread_t left_queue_thread;
     pthread_t right_queue_thread;
@@ -84,17 +67,16 @@ int main(int argc, char *argv[]) {
 	// get the default attributres
 	pthread_attr_init(&producerAttr);
 
-
-	/* argc should be 2 for correct execution */
+	/* argc should be 3 for correct execution */
 	if ( argc != 3 )
     {
-        /* We print argv[0] assuming it is the program name */
+        /* not enough arguments - display argv[0] assuming it is the program name */
         printf( "usage: %s filename time-to-cross", argv[0] );
     }
     else
     {
-        // We assume argv[1] is a filename to open
-        file = fopen( argv[1], "r" );
+        // argv[1] is a filename to open
+        file = fopen( argv[1], "r" ); // open file for reading 
 
         /* fopen returns 0, the NULL pointer, on failure */
         if ( file == 0 )
@@ -103,13 +85,12 @@ int main(int argc, char *argv[]) {
         }
         else
         {
+			// the last argument is the amount of time the monkey takes to cross the rope 
         	sleepTime = atoi(argv[2]);
-			//printf("Sleep time is: %d\n", sleepTime);
 
         	// create the threads
 			pthread_create(&producer, &producerAttr, produce, NULL);
             sleep(2);
-
             pthread_create(&left_queue_thread, &producerAttr, leftQueueFunction, NULL);
             pthread_create(&right_queue_thread, &producerAttr, rightQueueFunction, NULL);
 
@@ -123,44 +104,44 @@ int main(int argc, char *argv[]) {
 			sem_destroy(&rope_available);
             sem_destroy(&left_mutex);
             sem_destroy(&right_mutex);
-            //free memory used by malloc
-
-            // free(left_buffer);
-            // free(right_buffer);
-			// sem_destroy(&full);
-
-			//printf("\ndestroyed\n");
         }
     }
 	return 0;
 }
 
-
-
+// function for new baboon threads for crossing the rope 
+// arg: direction of travel 
 void *baboonCrossing(void *dir_ptr) {
     char dir = *((char *)dir_ptr);
-    sleep(2);
-    printf("%c", dir);
+    sleep(sleepTime); // time monkey takes to cross the rope 
+    printf("%c", dir); // output the direction the monkey that exited was going 
     fflush(stdout);
-    sem_post(&rope_available);
-    pthread_exit(NULL);
+    sem_post(&rope_available); // one more buffer slot available on the rope 
+    pthread_exit(NULL); // kill the thread 
 }
 
+// function for left queue thread to manage left linked list queue 
 void *leftQueueFunction() {
-    char c;
+	
+    char c; // used to store direction 
     int count = 0, total_threads = 0;
     pthread_attr_t attr;
 
     pthread_attr_init(&attr);
     while(1) {
+		// mutual exclusion for left queue 
         sem_wait(&left_mutex);
+		
         char front_key = NULL;
         if (left_queue->front && left_queue->front->key) {
             front_key = left_queue->front->key;
         }
+		// release left queue 
         sem_post(&left_mutex);
+		// used to signal there are no more baboons from input file 
         if (front_key == '*') break;
 
+		// mutex for rope direction 
         sem_wait(&direction_mutex);
 
         for (count = 0; count < MAX_BABOONS_PER_QUEUE; count++) {
@@ -170,12 +151,15 @@ void *leftQueueFunction() {
                 sem_post(&left_mutex);
                 break;
             }
+			// remove baboon from left queue 
             c = deQueue(left_queue)->key;
             sem_post(&left_mutex);
 
             sem_wait(&rope_available);
+			// create a thread for a baboon on the rope 
             pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
+		// join threads waits for all baboons to get off of rope before changing directions 
         for (total_threads = 0; total_threads < count; total_threads++) {
             pthread_join(baboonThreads[total_threads], NULL);
         }
@@ -185,6 +169,7 @@ void *leftQueueFunction() {
     pthread_exit(NULL);
 }
 
+// function for right thread to manage right linked list queue 
 void *rightQueueFunction() {
     char c;
     int count = 0;
@@ -224,22 +209,14 @@ void *rightQueueFunction() {
     pthread_exit(NULL);
 }
 
+// reads the input text file and populates the left an right queue's 
 void* produce(){
-	printf("inside produce\n");
-	// create a pointer to the left buffer
-	char* leftBufferPointer;
-	leftBufferPointer = left_buffer;
-	char* rightBufferPointer;
-	rightBufferPointer = right_buffer;
-
-	// integer to keep count of the characters written
-	int left_count = 0;
-	int right_count = 0;
-
-	/* open the file to be read by the producer */
+	// char variable to store each character read
 	char newChar;
 
+	// read characters until end of file is found 
 	while(fscanf(file, "%c", &newChar) != EOF){
+		// if the character is a comma, continue 
 		if(newChar == ','){
 			continue;
 		}
