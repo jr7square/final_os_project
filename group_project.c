@@ -222,7 +222,7 @@ void* produce(){
 		}
 		else{
             sem_wait(&queue_mutex);
-            enQueue(queue, 'L');
+            enQueue(queue, newChar);
             sem_post(&queue_mutex);
 		}
 	}
