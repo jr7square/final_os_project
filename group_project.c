@@ -28,15 +28,11 @@ must implement a molloc function for left and right buffers to grow because we d
 // files included
 #include "linked_queue.h"
 
-
 // number of buffers on the rope
 #define ROPE_BUFFER_SIZE 3
-<<<<<<< HEAD
+
 // number of turns each side is allowed at a time
-#define NUM_OF_TURNS 6
-=======
 #define MAX_BABOONS_PER_QUEUE 6
->>>>>>> thread-test
 
  // global variables which all threads will have access to
  char rope_buffer[ROPE_BUFFER_SIZE]; // 3 character array to simulate monkeys on the rope
@@ -65,9 +61,6 @@ void *baboonCrossing(void *dir_ptr);
 void *leftQueueFunction();
 void *rightQueueFunction();
 void *produce();
-
-
-
 
 int main(int argc, char *argv[]) {
 
@@ -131,13 +124,9 @@ int main(int argc, char *argv[]) {
             sem_destroy(&left_mutex);
             sem_destroy(&right_mutex);
             //free memory used by malloc
-<<<<<<< HEAD
-            //free(left_buffer);
-            //free(right_buffer);
-=======
+
             // free(left_buffer);
             // free(right_buffer);
->>>>>>> thread-test
 			// sem_destroy(&full);
 
 			//printf("\ndestroyed\n");
@@ -173,13 +162,9 @@ void *leftQueueFunction() {
         if (front_key == '*') break;
 
         sem_wait(&direction_mutex);
-<<<<<<< HEAD
-        //printf("Grabbed mutext left");
-        //fflush(stdout);
-        while(left_queue->front != NULL && left_queue->front->key != '*' && count < NUM_OF_TURNS) {
-=======
+
         for (count = 0; count < MAX_BABOONS_PER_QUEUE; count++) {
->>>>>>> thread-test
+
             sem_wait(&left_mutex);
             if (left_queue->front == NULL || left_queue->front->key == '*') {
                 sem_post(&left_mutex);
@@ -187,19 +172,12 @@ void *leftQueueFunction() {
             }
             c = deQueue(left_queue)->key;
             sem_post(&left_mutex);
-<<<<<<< HEAD
-            makeBaboonCross(c);
-            if (right_queue->front->key != '*') {
-                count += 1;
-            }
-=======
 
             sem_wait(&rope_available);
             pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
         for (total_threads = 0; total_threads < count; total_threads++) {
             pthread_join(baboonThreads[total_threads], NULL);
->>>>>>> thread-test
         }
         sem_post(&direction_mutex);
         sleep(1);
@@ -224,13 +202,8 @@ void *rightQueueFunction() {
         if (front_key && front_key == '*') break;
 
         sem_wait(&direction_mutex);
-<<<<<<< HEAD
-        //printf("Grabbed mutext right");
-        //fflush(stdout);
-        while(right_queue->front != NULL && right_queue->front->key != '*' && count < NUM_OF_TURNS) {
-=======
         for (count = 0; count < MAX_BABOONS_PER_QUEUE; count++) {
->>>>>>> thread-test
+
             sem_wait(&right_mutex);
             if (right_queue->front == NULL || right_queue->front->key == '*') {
                 sem_post(&right_mutex);
@@ -238,19 +211,12 @@ void *rightQueueFunction() {
             }
             c = deQueue(right_queue)->key;
             sem_post(&right_mutex);
-<<<<<<< HEAD
-            makeBaboonCross(c);
-            if (left_queue->front->key != '*') {
-                count += 1;
-            }
-=======
 
             sem_wait(&rope_available);
             pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
         for (total_threads = 0; total_threads < count; total_threads++) {
             pthread_join(baboonThreads[total_threads], NULL);
->>>>>>> thread-test
         }
         sem_post(&direction_mutex);
         sleep(1);
