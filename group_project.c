@@ -99,7 +99,6 @@ int main(int argc, char *argv[]) {
 			sem_destroy(&direction_mutex);
 			sem_destroy(&rope_available);
             sem_destroy(&queue_mutex);
-
         }
     }
 	return 0;
@@ -137,23 +136,25 @@ void *leftQueueFunction() {
         if (front_key == '*') break;
 
         sem_wait(&direction_mutex);
-        sem_wait(&queue_mutex);
-        if (queue->front == NULL || queue->front->key == '*' || queue->front->key != 'L') {
+        for (count = 0; count < ROPE_BUFFER_SIZE; count++) {
+
+            sem_wait(&queue_mutex);
+            if (queue->front == NULL || queue->front->key == '*' || queue->front->key != 'L') {
+                sem_post(&queue_mutex);
+                break;
+            }
+            // remove baboon from left queue
+            c = deQueue(queue)->key;
             sem_post(&queue_mutex);
-            break;
+
+            sem_wait(&rope_available);
+            // create a thread for a baboon on the rope
+            pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
-        // remove baboon from left queue
-        c = deQueue(queue)->key;
-        sem_post(&queue_mutex);
-        count++;
-        sem_wait(&rope_available);
-        // create a thread for a baboon on the rope
-        pthread_create(&baboonThreads[count % ROPE_BUFFER_SIZE], &attr, baboonCrossing, (void *)&c);
         // join threads waits for all baboons to get off of rope before changing directions
-        if(count > ROPE_BUFFER_SIZE) {
-            pthread_join(baboonThreads[count % ROPE_BUFFER_SIZE], NULL);
+        for (total_threads = 0; total_threads < count; total_threads++) {
+            pthread_join(baboonThreads[total_threads], NULL);
         }
-        
         sem_post(&direction_mutex);
         sleep(1);
 
@@ -181,24 +182,26 @@ void *rightQueueFunction() {
         if (front_key == '*') break;
         // mutex for rope direction
         sem_wait(&direction_mutex);
-        sem_wait(&queue_mutex);
-        if (queue->front == NULL || queue->front->key == '*' || queue->front->key != 'R') {
+
+        for (count = 0; count < ROPE_BUFFER_SIZE; count++) {
+
+            sem_wait(&queue_mutex);
+            if (queue->front == NULL || queue->front->key == '*' || queue->front->key != 'R') {
+                sem_post(&queue_mutex);
+                break;
+            }
+            // remove baboon from left queue
+            c = deQueue(queue)->key;
             sem_post(&queue_mutex);
-            break;
+
+            sem_wait(&rope_available);
+            // create a thread for a baboon on the rope
+            pthread_create(&baboonThreads[count], &attr, baboonCrossing, (void *)&c);
         }
-        // remove baboon from left queue
-        c = deQueue(queue)->key;
-        sem_post(&queue_mutex);
-        count++;
-        sem_wait(&rope_available);
-        // create a thread for a baboon on the rope
-        pthread_create(&baboonThreads[count % ROPE_BUFFER_SIZE], &attr, baboonCrossing, (void *)&c);
         // join threads waits for all baboons to get off of rope before changing directions
-        if(count > ROPE_BUFFER_SIZE) {
-            pthread_join(baboonThreads[count % ROPE_BUFFER_SIZE], NULL);
+        for (total_threads = 0; total_threads < count; total_threads++) {
+            pthread_join(baboonThreads[total_threads], NULL);
         }
-
-
         sem_post(&direction_mutex);
         sleep(1);
 
