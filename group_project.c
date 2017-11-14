@@ -221,9 +221,11 @@ void* produce(){
 			continue;
 		}
 		else{
-            sem_wait(&queue_mutex);
-            enQueue(queue, newChar);
-            sem_post(&queue_mutex);
+            if (newChar == 'L' || newChar == 'R') {
+                sem_wait(&queue_mutex);
+                enQueue(queue, newChar);
+                sem_post(&queue_mutex);
+            }
 		}
 	}
 	// after end of file we write '*' to both buffers so other threads know input has stopped
