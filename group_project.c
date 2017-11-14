@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
 			sem_destroy(&direction_mutex);
 			sem_destroy(&rope_available);
             sem_destroy(&queue_mutex);
+
         }
     }
 	return 0;
@@ -149,7 +150,10 @@ void *leftQueueFunction() {
         // create a thread for a baboon on the rope
         pthread_create(&baboonThreads[count % ROPE_BUFFER_SIZE], &attr, baboonCrossing, (void *)&c);
         // join threads waits for all baboons to get off of rope before changing directions
-        pthread_join(baboonThreads[count % ROPE_BUFFER_SIZE], NULL);
+        if(count > ROPE_BUFFER_SIZE) {
+            pthread_join(baboonThreads[count % ROPE_BUFFER_SIZE], NULL);
+        }
+        
         sem_post(&direction_mutex);
         sleep(1);
 
@@ -190,7 +194,10 @@ void *rightQueueFunction() {
         // create a thread for a baboon on the rope
         pthread_create(&baboonThreads[count % ROPE_BUFFER_SIZE], &attr, baboonCrossing, (void *)&c);
         // join threads waits for all baboons to get off of rope before changing directions
-        pthread_join(baboonThreads[count % ROPE_BUFFER_SIZE], NULL);
+        if(count > ROPE_BUFFER_SIZE) {
+            pthread_join(baboonThreads[count % ROPE_BUFFER_SIZE], NULL);
+        }
+
 
         sem_post(&direction_mutex);
         sleep(1);
